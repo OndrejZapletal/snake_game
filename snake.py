@@ -9,7 +9,7 @@ import time
 WIDTH = 50
 HEIGHT = 50
 TIME_DELAY = 1
-CELL_TYPE = ("  ", "##", "**")
+CELL_TYPE = ("  ", "##", "><")
 
 
 class Game(object):
@@ -79,7 +79,7 @@ class Game(object):
 
     def _game_over(self):
         self.screen.addstr(self.heigth + 7, 0, "Game Over!", curses.A_BOLD)
-        self.screen.addstr(self.heigth + 9, 0, "Do you want to continue? (y/n):")
+        self.screen.addstr(self.heigth + 9, 0, "Do you want to restart game? (y/n):")
         key = self.screen.getch()
         while key != ord('y') or key != ord('n'):
             key = self.screen.getch()
