@@ -6,8 +6,8 @@ import curses
 import sys
 import time
 
-WIDTH = 20
-HEIGHT = 10
+WIDTH = 50
+HEIGHT = 50
 TIME_DELAY = 1
 CELL_TYPE = ("  ", "##", "**")
 
@@ -17,14 +17,24 @@ class Game(object):
     """Serving game mechanics."""
 
     def __init__(self, width, heigth):
-        self.heigth = heigth
-        self.width = width
-        self.food = Food(width, heigth)
-        self.snake = Snake(width, heigth, self.food)
-        self.canvas = Canvas(width, heigth, self.snake, self.food)
+        self.screen = curses.initscr()
+        maxheigth, maxwidth = self.screen.getmaxyx()
+
+        if heigth < maxheigth - 10:
+            self.heigth = heigth
+        else:
+            self.heigth = maxheigth - 10
+
+        if width * 2 + 2 < maxwidth:
+            self.width = width
+        else:
+            self.width = int((maxwidth / 2) - 2)
+
+        self.food = Food(self.width, self.heigth)
+        self.snake = Snake(self.width, self.heigth, self.food)
+        self.canvas = Canvas(self.width, self.heigth, self.snake, self.food)
 
         self.direction = (0, 1)
-        self.screen = curses.initscr()
         self.screen.keypad(True)
         self.score = 0
         self.length = 1
