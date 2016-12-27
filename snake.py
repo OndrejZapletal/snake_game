@@ -87,6 +87,7 @@ class Game(object):
                 self.screen.erase()
                 self.canvas.create_food_on_canvas()
                 self.snake.restart_snake(self.canvas.content)
+                self.length = 1
                 break
 
             if key == ord('n'):
