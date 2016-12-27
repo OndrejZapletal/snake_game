@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
+
 """Implementation of Snake game that is using curses library to provide game UI."""
 from random import randint
 import curses
 import sys
+import time
 
 WIDTH = 20
 HEIGHT = 10
@@ -23,8 +26,9 @@ class Game(object):
         self.direction = (0, 1)
         self.screen = curses.initscr()
         self.screen.keypad(True)
-        self.score = 1
+        self.score = 0
         self.length = 1
+        self.start_time = time.time()
         curses.halfdelay(TIME_DELAY)
         curses.noecho()
 
@@ -40,6 +44,8 @@ class Game(object):
             if self._food_found():
                 self.snake.feed()
                 self.canvas.create_food_on_canvas()
+                self.score += 100
+                self.length += 1
 
             self.canvas.update()
 
@@ -56,10 +62,14 @@ class Game(object):
     def _show(self):
         self.screen.erase()
         self.screen.addstr(0, 0, str(self.canvas))
+        self.screen.addstr(self.heigth + 3, 0, "Current Score: " + str(self.score))
+        self.screen.addstr(self.heigth + 4, 0, "Snake length: " + str(self.length))
+        self.screen.addstr(self.heigth + 5, 0, "Time: %.1f s" % (time.time() - self.start_time))
+        self.screen.addstr(self.heigth + 7, 0, "")
 
     def _game_over(self):
-        self.screen.addstr(self.heigth + 3, 0, "Game Over!", curses.A_BOLD)
-        self.screen.addstr(self.heigth + 5, 0, "Do you want to continue? (y/n):")
+        self.screen.addstr(self.heigth + 7, 0, "Game Over!", curses.A_BOLD)
+        self.screen.addstr(self.heigth + 9, 0, "Do you want to continue? (y/n):")
         key = self.screen.getch()
         while key != ord('y') or key != ord('n'):
             key = self.screen.getch()
