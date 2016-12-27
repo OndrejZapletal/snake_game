@@ -1,5 +1,6 @@
 # Game of Snake #
-Simple python application that is using curses module for UI.
+Simple python application that is using [curses](https://docs.python.org/3/howto/curses.html) module for UI.
+
 
 Game is controlled via arrow keys and can be quit by "q" key press.
 

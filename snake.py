@@ -22,10 +22,11 @@ class Game(object):
 
         self.direction = (0, 1)
         self.screen = curses.initscr()
-        self.screen.keypad(1)
+        self.screen.keypad(True)
         self.score = 1
         self.length = 1
         curses.halfdelay(TIME_DELAY)
+        curses.noecho()
 
     def _update_game(self):
         self._step()
@@ -57,7 +58,7 @@ class Game(object):
         self.screen.addstr(0, 0, str(self.canvas))
 
     def _game_over(self):
-        self.screen.addstr(self.heigth + 3, 0, "Game Over!")
+        self.screen.addstr(self.heigth + 3, 0, "Game Over!", curses.A_BOLD)
         self.screen.addstr(self.heigth + 5, 0, "Do you want to continue? (y/n):")
         key = self.screen.getch()
         while key != ord('y') or key != ord('n'):
@@ -69,8 +70,12 @@ class Game(object):
                 break
 
             if key == ord('n'):
+                curses.nocbreak()
+                self.screen.keypad(False)
+                curses.echo()
                 curses.endwin()
                 sys.exit()
+
 
     def _change_direction(self, direction):
         if self.direction[0] == -direction[0]:
@@ -96,6 +101,9 @@ class Game(object):
                 self._change_direction((0, -1))
             elif key == curses.KEY_RIGHT:
                 self._change_direction((0, 1))
+        curses.nocbreak()
+        self.screen.keypad(False)
+        curses.echo()
         curses.endwin()
 
 
