@@ -22,18 +22,20 @@ class Game(object):
         curses.halfdelay(TIME_DELAY)
 
     def _update_game(self):
-        self._move()
+        self._step()
         self._show()
 
-    def _move(self):
+    def _step(self):
         self.snake.move(self.direction)
 
-        if self.canvas.content[self.snake.y][self.snake.x] == 2:
+        if self._food_found():
             self.snake.feed()
-            self.canvas.create_food()
+            self.canvas.create_food_on_canvas()
 
-        # self.food.refresh(self.canvas.content)
         self.canvas.update()
+
+    def _food_found(self):
+        return self.canvas.content[self.snake.y_pos][self.snake.x_pos] == 2
 
     def _show(self):
         self.screen.erase()
@@ -52,6 +54,7 @@ class Game(object):
         self.direction = (0, 1)
 
     def play(self):
+        """Starts gameplay"""
         key = ''
         while key != ord('q'):
             self._update_game()
@@ -99,20 +102,22 @@ class Canvas(object):
             self.content.append([0] * self.width)
 
     def update(self):
+        """Method updates food and snake position on canvas."""
         self._clear()
         for point in self.snake.tail:
             self.content[point[0]][point[1]] = 1
-        self.content[self.snake.y][self.snake.x] = 1
-        self.content[self.food.y][self.food.x] = 2
+        self.content[self.snake.y_pos][self.snake.x_pos] = 1
+        self.content[self.food.y_pos][self.food.x_pos] = 2
 
-    def create_food(self):
+    def create_food_on_canvas(self):
+        """Method creates food on random position on canvas."""
         invalid = True
         while invalid:
-            x = randint(3, self.width - 3)
-            y = randint(3, self.height - 3)
-            if self.content[y][x] == 0:
+            x_pos = randint(3, self.width - 3)
+            y_pos = randint(3, self.height - 3)
+            if self.content[y_pos][x_pos] == 0:
                 invalid = False
-                self.food.update_position(x, y)
+                self.food.update_position(x_pos, y_pos)
 
 
 class Snake(object):
@@ -123,52 +128,56 @@ class Snake(object):
         self.can_width = width
         self.can_height = height
         self.tail = []
-
         invalid = True
         while invalid:
-            self.x = randint(3, width - 3)
-            self.y = randint(3, height - 3)
-            if food.y != self.y and food.x != self.x:
+            self.x_pos = randint(3, width - 3)
+            self.y_pos = randint(3, height - 3)
+            if food.y_pos != self.y_pos and food.x_pos != self.x_pos:
                 invalid = False
 
     def _restrict_position(self):
-        if self.x >= self.can_width:
-            self.x = 0
-        elif self.x < 0:
-            self.x = self.can_width - 1
+        if self.x_pos >= self.can_width:
+            self.x_pos = 0
+        elif self.x_pos < 0:
+            self.x_pos = self.can_width - 1
 
-        if self.y >= self.can_height:
-            self.y = 0
-        elif self.y < 0:
-            self.y = self.can_height - 1
+        if self.y_pos >= self.can_height:
+            self.y_pos = 0
+        elif self.y_pos < 0:
+            self.y_pos = self.can_height - 1
 
     def move(self, direction):
+        """Moves snakes position and its tail."""
         for i in range(len(self.tail)-1):
             self.tail[i] = self.tail[i + 1]
         if len(self.tail) > 0:
-            self.tail[len(self.tail) - 1] = (self.y, self.x)
+            self.tail[len(self.tail) - 1] = (self.y_pos, self.x_pos)
 
-        self.y -= direction[0]
-        self.x += direction[1]
+        self.y_pos -= direction[0]
+        self.x_pos += direction[1]
 
         self._restrict_position()
 
 
     def feed(self):
-        self.tail.insert(0, (self.y, self.x))
+        """Expand snakes tail after feeding."""
+        self.tail.insert(0, (self.y_pos, self.x_pos))
 
 
 class Food(object):
 
+    """Represents Food for snake."""
+
     def __init__(self, width, heigth):
         self.width = width
         self.heigth = heigth
-        self.x = randint(3, self.width - 3)
-        self.y = randint(3, self.heigth - 3)
+        self.x_pos = randint(3, self.width - 3)
+        self.y_pos = randint(3, self.heigth - 3)
 
-    def update_position(self, x, y):
-        self.x = x
-        self.y = y
+    def update_position(self, x_pos, y_pos):
+        """Update position of food."""
+        self.x_pos = x_pos
+        self.y_pos = y_pos
 
 
 new_game = Game(WIDTH, HEIGHT)
