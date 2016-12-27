@@ -9,6 +9,7 @@ CELL_TYPE = ("  ", "##", "**")
 
 
 class Game(object):
+
     """Serving game mechanics."""
 
     def __init__(self, width, heigth):
@@ -41,18 +42,6 @@ class Game(object):
         self.screen.erase()
         self.screen.addstr(0, 0, str(self.canvas))
 
-    def _up(self):
-        self.direction = (1, 0)
-
-    def _down(self):
-        self.direction = (-1, 0)
-
-    def _left(self):
-        self.direction = (0, -1)
-
-    def _right(self):
-        self.direction = (0, 1)
-
     def play(self):
         """Starts gameplay"""
         key = ''
@@ -61,13 +50,13 @@ class Game(object):
             key = self.screen.getch()
             self.screen.refresh()
             if key == curses.KEY_UP:
-                self._up()
+                self.direction = (1, 0)
             elif key == curses.KEY_DOWN:
-                self._down()
+                self.direction = (-1, 0)
             elif key == curses.KEY_LEFT:
-                self._left()
+                self.direction = (0, -1)
             elif key == curses.KEY_RIGHT:
-                self._right()
+                self.direction = (0, 1)
         curses.endwin()
 
 
