@@ -1,9 +1,10 @@
 """Implementation of Snake game that is using curses library to provide game UI."""
 from random import randint
 import curses
+import sys
 
-WIDTH = 50
-HEIGHT = 30
+WIDTH = 20
+HEIGHT = 10
 TIME_DELAY = 1
 CELL_TYPE = ("  ", "##", "**")
 
@@ -13,6 +14,8 @@ class Game(object):
     """Serving game mechanics."""
 
     def __init__(self, width, heigth):
+        self.heigth = heigth
+        self.width = width
         self.food = Food(width, heigth)
         self.snake = Snake(width, heigth, self.food)
         self.canvas = Canvas(width, heigth, self.snake, self.food)
@@ -20,6 +23,8 @@ class Game(object):
         self.direction = (0, 1)
         self.screen = curses.initscr()
         self.screen.keypad(1)
+        self.score = 1
+        self.length = 1
         curses.halfdelay(TIME_DELAY)
 
     def _update_game(self):
@@ -28,19 +33,53 @@ class Game(object):
 
     def _step(self):
         self.snake.move(self.direction)
+        if self._wrong_move():
+            self._game_over()
+        else:
+            if self._food_found():
+                self.snake.feed()
+                self.canvas.create_food_on_canvas()
 
-        if self._food_found():
-            self.snake.feed()
-            self.canvas.create_food_on_canvas()
-
-        self.canvas.update()
+            self.canvas.update()
 
     def _food_found(self):
         return self.canvas.content[self.snake.y_pos][self.snake.x_pos] == 2
 
+    def _wrong_move(self):
+        result = False
+        for tail_position in self.snake.tail:
+            if tail_position == (self.snake.y_pos, self.snake.x_pos):
+                result = True
+        return result
+
     def _show(self):
         self.screen.erase()
         self.screen.addstr(0, 0, str(self.canvas))
+
+    def _game_over(self):
+        self.screen.addstr(self.heigth + 3, 0, "Game Over!")
+        self.screen.addstr(self.heigth + 5, 0, "Do you want to continue? (y/n):")
+        key = self.screen.getch()
+        while key != ord('y') or key != ord('n'):
+            key = self.screen.getch()
+            if key == ord('y'):
+                self.screen.erase()
+                self.canvas.create_food_on_canvas()
+                self.snake.restart_snake(self.canvas.content)
+                break
+
+            if key == ord('n'):
+                curses.endwin()
+                sys.exit()
+
+    def _change_direction(self, direction):
+        if self.direction[0] == -direction[0]:
+            pass
+        elif self.direction[1] == -direction[1]:
+            pass
+        else:
+            self.direction = direction
+
 
     def play(self):
         """Starts gameplay"""
@@ -50,13 +89,13 @@ class Game(object):
             key = self.screen.getch()
             self.screen.refresh()
             if key == curses.KEY_UP:
-                self.direction = (1, 0)
+                self._change_direction((1, 0))
             elif key == curses.KEY_DOWN:
-                self.direction = (-1, 0)
+                self._change_direction((-1, 0))
             elif key == curses.KEY_LEFT:
-                self.direction = (0, -1)
+                self._change_direction((0, -1))
             elif key == curses.KEY_RIGHT:
-                self.direction = (0, 1)
+                self._change_direction((0, 1))
         curses.endwin()
 
 
@@ -69,9 +108,7 @@ class Canvas(object):
         self.height = height
         self.food = food
         self.snake = snake
-
         self.content = []
-
         self._clear()
         self.update()
 
@@ -129,11 +166,20 @@ class Snake(object):
             self.x_pos = 0
         elif self.x_pos < 0:
             self.x_pos = self.can_width - 1
-
         if self.y_pos >= self.can_height:
             self.y_pos = 0
         elif self.y_pos < 0:
             self.y_pos = self.can_height - 1
+
+    def restart_snake(self, canvas_content):
+        self.tail = []
+        invalid = True
+        while invalid:
+            self.x_pos = randint(3, self.can_width - 3)
+            self.y_pos = randint(3, self.can_height - 3)
+            if canvas_content[self.y_pos][self.x_pos] == 0:
+                invalid = False
+
 
     def move(self, direction):
         """Moves snakes position and its tail."""
@@ -141,12 +187,9 @@ class Snake(object):
             self.tail[i] = self.tail[i + 1]
         if len(self.tail) > 0:
             self.tail[len(self.tail) - 1] = (self.y_pos, self.x_pos)
-
         self.y_pos -= direction[0]
         self.x_pos += direction[1]
-
         self._restrict_position()
-
 
     def feed(self):
         """Expand snakes tail after feeding."""
