@@ -1,9 +1,11 @@
 from random import randint
+import curses
 import ipdb
 
-WIDTH = 10
-HEIGHT = 10
-cell_type = (" ", "#", "*")
+WIDTH = 50
+HEIGHT = 50
+TIME_DELAY = 2
+cell_type = ("  ", "##", "**")
 
 
 class Game(object):
@@ -14,13 +16,51 @@ class Game(object):
         self.snake = Snake(width, height)
         self.canvas.set_snake(self.snake)
         self.canvas.set_food()
+        self.direction = (0, 1)
+        self.screen = curses.initscr()
+        curses.halfdelay(TIME_DELAY)
+        self.screen.keypad(1)
 
-    def move(self, x, y):
-        self.snake.move(x, y)
+    def update_game(self):
+        self.move()
+        self.show(self.screen)
+
+    def play(self):
+        key = ''
+        while key != ord('q'):
+            self.update_game()
+            key = self.screen.getch()
+            self.screen.refresh()
+            if key == curses.KEY_UP:
+                self.up()
+            elif key == curses.KEY_DOWN:
+                self.down()
+            elif key == curses.KEY_LEFT:
+                self.left()
+            elif key == curses.KEY_RIGHT:
+                self.right()
+        curses.endwin()
+
+    def move(self):
+        self.snake.move(self.direction)
+
         self.canvas.set_snake(self.snake)
 
-    def show(self):
-        print(self.canvas)
+    def show(self, screen):
+        screen.erase()
+        screen.addstr(0,0, str(self.canvas))
+
+    def up(self):
+        self.direction = (1, 0)
+
+    def down(self):
+        self.direction = (-1, 0)
+
+    def left(self):
+        self.direction = (0, -1)
+
+    def right(self):
+        self.direction = (0, 1)
 
 
 class Canvas(object):
@@ -71,12 +111,13 @@ class Snake(object):
     def __init__(self, width, height):
         self.can_width = width
         self.can_height = height
+
         self.x = randint(3, width - 3)
         self.y = randint(3, height - 3)
 
-    def move(self, x, y):
-        self.x += x
-        self.y -= y
+    def move(self, direction):
+        self.y -= direction[0]
+        self.x += direction[1]
         if self.x >= self.can_width:
             self.x = self.can_width - 1
         elif self.x < 0:
@@ -87,12 +128,8 @@ class Snake(object):
         elif self.y < 0:
             self.y = 0
 
+
+
+
 new_game = Game(WIDTH, HEIGHT)
-new_game.move(0, 1)
-new_game.show()
-new_game.move(0, 1)
-new_game.show()
-new_game.move(1, 0)
-new_game.show()
-new_game.move(1, 0)
-new_game.show()
+new_game.play()
