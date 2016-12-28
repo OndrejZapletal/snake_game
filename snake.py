@@ -9,7 +9,7 @@ import time
 WIDTH = 50
 HEIGHT = 50
 TIME_DELAY = 1
-CELL_TYPE = ("  ", "##", "><")
+CELL_TYPE = ("  ", ("/\\", "\\/", "<=", "=>"), "##", "<>")
 
 
 class Game(object):
@@ -18,33 +18,34 @@ class Game(object):
 
     def __init__(self, width, heigth):
         self.screen = curses.initscr()
-        maxheigth, maxwidth = self.screen.getmaxyx()
+        self.hei = width
+        self.wid = heigth
+        self._restrict_size()
 
-        if heigth < maxheigth - 10:
-            self.heigth = heigth
-        else:
-            self.heigth = maxheigth - 10
+        self.food = Food(self.wid, self.hei)
+        self.snake = Snake(self.wid, self.hei, self.food)
+        self.canvas = Canvas(self.wid, self.hei, self.snake, self.food)
 
-        if width * 2 + 2 < maxwidth:
-            self.width = width
-        else:
-            self.width = int((maxwidth / 2) - 2)
-
-        self.food = Food(self.width, self.heigth)
-        self.snake = Snake(self.width, self.heigth, self.food)
-        self.canvas = Canvas(self.width, self.heigth, self.snake, self.food)
-
-        self.direction = (0, 1)
-        self.screen.keypad(True)
         self.score = 0
         self.length = 1
         self.start_time = time.time()
+        self.direction = (0, 1)
+
+        self.screen.keypad(True)
         curses.halfdelay(TIME_DELAY)
         curses.noecho()
 
+    def _restrict_size(self):
+        maxheigth, maxwidth = self.screen.getmaxyx()
+        if self.hei > maxheigth - 10:
+            self.hei = maxheigth - 10
+
+        if self.wid * 2 + 2 > maxwidth:
+            self.wid = int((maxwidth / 2) - 2)
+
     def _update_game(self):
         self._step()
-        self._show()
+        self._draw_on_screen()
 
     def _step(self):
         self.snake.move(self.direction)
@@ -53,14 +54,14 @@ class Game(object):
         else:
             if self._food_found():
                 self.snake.feed()
-                self.canvas.create_food_on_canvas()
+                self.canvas.create_food()
                 self.score += 100
                 self.length += 1
 
             self.canvas.update()
 
     def _food_found(self):
-        return self.canvas.content[self.snake.y_pos][self.snake.x_pos] == 2
+        return self.canvas.content[self.snake.y_pos][self.snake.x_pos] == 3
 
     def _wrong_move(self):
         result = False
@@ -69,43 +70,43 @@ class Game(object):
                 result = True
         return result
 
-    def _show(self):
+    def _draw_on_screen(self):
         self.screen.erase()
         self.screen.addstr(0, 0, str(self.canvas))
-        self.screen.addstr(self.heigth + 3, 0, "Current Score: " + str(self.score))
-        self.screen.addstr(self.heigth + 4, 0, "Snake length: " + str(self.length))
-        self.screen.addstr(self.heigth + 5, 0, "Time: %.1f s" % (time.time() - self.start_time))
-        self.screen.addstr(self.heigth + 7, 0, "")
+        self.screen.addstr(self.hei + 3, 0, "Current Score: " + str(self.score))
+        self.screen.addstr(self.hei + 4, 0, "Snake length: " + str(self.length))
+        self.screen.addstr(self.hei + 5, 0, "Time: %.1f s" % (time.time() - self.start_time))
+        self.screen.addstr(self.hei + 7, 0, "")
 
     def _game_over(self):
-        self.screen.addstr(self.heigth + 7, 0, "Game Over!", curses.A_BOLD)
-        self.screen.addstr(self.heigth + 9, 0, "Do you want to restart game? (y/n):")
-        key = self.screen.getch()
-        while key != ord('y') or key != ord('n'):
+        self.screen.addstr(self.hei + 7, 0, "Game Over!", curses.A_BOLD)
+        self.screen.addstr(self.hei + 9, 0, "Do you want to restart game? (y/n):")
+        while True:
             key = self.screen.getch()
             if key == ord('y'):
                 self.screen.erase()
-                self.canvas.create_food_on_canvas()
+                self.canvas.create_food()
                 self.snake.restart_snake(self.canvas.content)
                 self.length = 1
                 break
-
-            if key == ord('n'):
+            elif key == ord('n'):
                 curses.nocbreak()
                 self.screen.keypad(False)
                 curses.echo()
                 curses.endwin()
                 sys.exit()
 
-
     def _change_direction(self, direction):
-        if self.direction[0] == -direction[0]:
-            pass
-        elif self.direction[1] == -direction[1]:
-            pass
-        else:
+        if not self.direction[0] == - direction[0] and not self.direction[1] == - direction[1]:
             self.direction = direction
-
+            if direction == (1, 0):
+                self.snake.direction = 0
+            elif direction == (-1, 0):
+                self.snake.direction = 1
+            elif direction == (0, -1):
+                self.snake.direction = 2
+            elif direction == (0, 1):
+                self.snake.direction = 3
 
     def play(self):
         """Starts gameplay"""
@@ -133,7 +134,7 @@ class Canvas(object):
     """This class will represent game canvas."""
 
     def __init__(self, width, height, snake, food):
-        self.width = width
+        self.wid = width
         self.height = height
         self.food = food
         self.snake = snake
@@ -142,11 +143,14 @@ class Canvas(object):
         self.update()
 
     def __repr__(self):
-        representation = "|" + "-" * ((len(self.content[0])) * len(CELL_TYPE[0])) + "|\n"
+        representation = "|" + "-" * (((len(self.content[0])) * len(CELL_TYPE[0]))) + "|\n"
         for row in self.content:
             representation += "|"
             for cell in row:
-                representation += CELL_TYPE[cell]
+                if cell == 1:
+                    representation += CELL_TYPE[cell][self.snake.direction]
+                else:
+                    representation += CELL_TYPE[cell]
             representation += "|\n"
         representation += "|" + "-" * ((len(self.content[0])) * len(CELL_TYPE[0])) + "|\n"
         return representation
@@ -154,21 +158,21 @@ class Canvas(object):
     def _clear(self):
         self.content = []
         for _ in range(self.height):
-            self.content.append([0] * self.width)
+            self.content.append([0] * self.wid)
 
     def update(self):
         """Method updates food and snake position on canvas."""
         self._clear()
         for point in self.snake.tail:
-            self.content[point[0]][point[1]] = 1
+            self.content[point[0]][point[1]] = 2
         self.content[self.snake.y_pos][self.snake.x_pos] = 1
-        self.content[self.food.y_pos][self.food.x_pos] = 2
+        self.content[self.food.y_pos][self.food.x_pos] = 3
 
-    def create_food_on_canvas(self):
+    def create_food(self):
         """Method creates food on random position on canvas."""
         invalid = True
         while invalid:
-            x_pos = randint(3, self.width - 3)
+            x_pos = randint(3, self.wid - 3)
             y_pos = randint(3, self.height - 3)
             if self.content[y_pos][x_pos] == 0:
                 invalid = False
@@ -183,6 +187,7 @@ class Snake(object):
         self.can_width = width
         self.can_height = height
         self.tail = []
+        self.direction = 3
         invalid = True
         while invalid:
             self.x_pos = randint(3, width - 3)
@@ -201,6 +206,7 @@ class Snake(object):
             self.y_pos = self.can_height - 1
 
     def restart_snake(self, canvas_content):
+        """Restart position and tale of snake."""
         self.tail = []
         invalid = True
         while invalid:
@@ -208,7 +214,6 @@ class Snake(object):
             self.y_pos = randint(3, self.can_height - 3)
             if canvas_content[self.y_pos][self.x_pos] == 0:
                 invalid = False
-
 
     def move(self, direction):
         """Moves snakes position and its tail."""
@@ -230,10 +235,10 @@ class Food(object):
     """Represents Food for snake."""
 
     def __init__(self, width, heigth):
-        self.width = width
-        self.heigth = heigth
-        self.x_pos = randint(3, self.width - 3)
-        self.y_pos = randint(3, self.heigth - 3)
+        self.wid = width
+        self.hei = heigth
+        self.x_pos = randint(3, self.wid - 3)
+        self.y_pos = randint(3, self.hei - 3)
 
     def update_position(self, x_pos, y_pos):
         """Update position of food."""
