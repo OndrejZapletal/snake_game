@@ -113,13 +113,21 @@ class Game(object):
             self._update_game()
             key = self.screen.getch()
             self.screen.refresh()
-            if key == curses.KEY_UP:
+            if key == curses.KEY_UP or \
+               key == ord('k') or \
+               key == ord('w'):
                 self.snake.change_direction(0)
-            elif key == curses.KEY_DOWN:
+            elif key == curses.KEY_DOWN or \
+                 key == ord('j') or \
+                 key == ord('s'):
                 self.snake.change_direction(1)
-            elif key == curses.KEY_LEFT:
+            elif key == curses.KEY_LEFT or \
+                 key == ord('h') or \
+                 key == ord('a'):
                 self.snake.change_direction(2)
-            elif key == curses.KEY_RIGHT:
+            elif key == curses.KEY_RIGHT or \
+                 key == ord('l') or \
+                 key == ord('d'):
                 self.snake.change_direction(3)
         curses.nocbreak()
         self.screen.keypad(False)
